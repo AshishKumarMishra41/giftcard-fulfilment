@@ -1,0 +1,14 @@
+{
+  "exports": [
+    {
+      "id": "http.storefront.routes",
+      "virtualPath": "./dist\\storefront.manifest.all.js",
+      "actionId": "http.storefront.routes"
+    },
+    {
+      "id": "updateFulfillment",
+      "virtualPath": "./dist\\storefront.manifest.all.js",
+      "actionId": "http.storefront.routes"
+    }
+  ]
+}

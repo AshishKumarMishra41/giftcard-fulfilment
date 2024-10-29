@@ -3,7 +3,7 @@ global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
 
 class Shipment {
     getOrderShipmentDetails(accessToken, orderId) {
-        return new promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const logger = new Logger();
             try{
                 logger.info("AKM");

@@ -3,11 +3,10 @@ const Authenticate = require('../../auth/authentication');
 //const Authorize = require('./auth/authorize');
 const Shipment = require('../../egifter/shipment');
 
-global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
+global.logServer =  "https://6a56-2401-4900-716f-e5f8-1d3e-7b90-59a8-4a73.ngrok-free.app";
 
 module.exports = function(context,callback) {
     const logger = new Logger();
-    //logger.info(context.request.query);
     logger.info(context.request.body);
     const data = context.request.body;
     logger.info(data.orderStatus);
@@ -18,11 +17,8 @@ module.exports = function(context,callback) {
             const shipment = new Shipment();
             authentication.authenticate().then((initialAccessToken) =>{
                 logger.info(initialAccessToken);
-                //context.response.body = "DONE";
-                //context.response.end();
                 shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) =>{
                     logger.info(shipmentData);
-                    
                     context.response.body = "DONE";
                     context.response.end();
                 }).catch((err) => {

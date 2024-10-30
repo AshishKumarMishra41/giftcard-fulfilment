@@ -1,4 +1,6 @@
 const Logger = require("../core/Logger");
+const request = require('request');
+
 global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
 
 class Shipment {
@@ -21,22 +23,23 @@ class Shipment {
     
                 request(requestOptions, (error, response, body) => {
                     if (error) {
-                        console.error("Fetch Order failed:", error.message);
+                        logger.error("Fetch Order failed:", error.message);
                         reject(new Error("Order Error: " + error.message));
                     } else {
-                        console.log("Response Code:", response.statusCode);
+                        logger.log("Response Code:", response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
-                            console.error("Failed: HTTP response code:", response.statusCode);
-                            console.error("Failed: HTTP response message:", response.statusMessage);
+                            logger.error("Failed: HTTP response code:", response.statusCode);
+                            logger.error("Failed: HTTP response message:", response.statusMessage);
                             reject(new Error("Order Error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;
-                            console.log("Order fetch successful. Data:", orderDtls);
+                            logger.log("Order fetch successful. Data:", orderDtls);
                             resolve(orderDtls);
                         }
                     }
                 });
             } catch(error){
+                logger.error("Error: "+error.message);
                 reject(new Error("EgifterError: " + error));
             }
             

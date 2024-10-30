@@ -290,11 +290,10 @@ const Authenticate = require('../../auth/authentication');
 //const Authorize = require('./auth/authorize');
 const Shipment = require('../../egifter/shipment');
 
-global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
+global.logServer =  "https://6a56-2401-4900-716f-e5f8-1d3e-7b90-59a8-4a73.ngrok-free.app";
 
 module.exports = function(context,callback) {
     const logger = new Logger();
-    //logger.info(context.request.query);
     logger.info(context.request.body);
     const data = context.request.body;
     logger.info(data.orderStatus);
@@ -305,11 +304,8 @@ module.exports = function(context,callback) {
             const shipment = new Shipment();
             authentication.authenticate().then((initialAccessToken) =>{
                 logger.info(initialAccessToken);
-                //context.response.body = "DONE";
-                //context.response.end();
                 shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) =>{
                     logger.info(shipmentData);
-                    
                     context.response.body = "DONE";
                     context.response.end();
                 }).catch((err) => {
@@ -354,11 +350,13 @@ module.exports = function(context,callback) {
 };
 },{"../../auth/authentication":1,"../../core/Logger":2,"../../egifter/shipment":6}],6:[function(require,module,exports){
 const Logger = require("../core/Logger");
+const request = require('request');
+
 global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
 
 class Shipment {
     getOrderShipmentDetails(accessToken, orderId) {
-        return new promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const logger = new Logger();
             try{
                 logger.info("AKM");
@@ -376,22 +374,23 @@ class Shipment {
     
                 request(requestOptions, (error, response, body) => {
                     if (error) {
-                        console.error("Fetch Order failed:", error.message);
+                        logger.error("Fetch Order failed:", error.message);
                         reject(new Error("Order Error: " + error.message));
                     } else {
-                        console.log("Response Code:", response.statusCode);
+                        logger.log("Response Code:", response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
-                            console.error("Failed: HTTP response code:", response.statusCode);
-                            console.error("Failed: HTTP response message:", response.statusMessage);
+                            logger.error("Failed: HTTP response code:", response.statusCode);
+                            logger.error("Failed: HTTP response message:", response.statusMessage);
                             reject(new Error("Order Error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;
-                            console.log("Order fetch successful. Data:", orderDtls);
+                            logger.log("Order fetch successful. Data:", orderDtls);
                             resolve(orderDtls);
                         }
                     }
                 });
             } catch(error){
+                logger.error("Error: "+error.message);
                 reject(new Error("EgifterError: " + error));
             }
             
@@ -428,9 +427,8 @@ class Shipment {
 }
 
 module.exports = Shipment;
-},{"../core/Logger":2}],7:[function(require,module,exports){
+},{"../core/Logger":2,"request":125}],7:[function(require,module,exports){
 module.exports = {
-  
   'http.storefront.routes': {
       actionName: 'http.storefront.routes',
       customFunction: require('./domains/storefront/http.storefront.routes')

@@ -46,33 +46,44 @@ class Shipment {
         });
     }
 
-    /*async updateShipmentStatus(accessToken, shipmentId) {
-        try {
-            const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
-            console.log(urlShip);
-
-            const response = await fetch(urlShip, {
-                method: 'PUT',
-                headers: {
-                    'x-vol-app-claims': accessToken,
-                    'x-vol-tenant': '100033',
-                    'x-vol-site': '100058',
-                    'Cookie': '__cf_bm=uE89w1q.iUsl66X9k7Yd7jLWLtw7SEDhzCwpxj1ZK0k-1729255129-1.0.1.1-kiMHp2bfd0nKROpQASUTtrDh38crjOpjsonSEaOU3eagoRy6ccMtb0vOt1KxOFvuS1uEjJQynVS7xxe3Yw2UFw'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+    updateShipmentStatus(accessToken, shipmentId) {
+        return new Promise((resolve, reject) => {
+            try {
+                const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
+                const requestOptions = {
+                    json: true,
+                    method: 'PUT',
+                    url: urlShip,
+                    headers: {
+                        'x-vol-app-claims': accessToken,
+                        'x-vol-tenant': '100033',
+                        'x-vol-site': '100058',
+                        'Cookie': '__cf_bm=.S18zhLVD_cw.W1z7_T0B7bOuOzBXQHMZ80ngd7p3Ks-1729084320-1.0.1.1-ODYkoZ4PIyExFb_ZBD15fJf3vJPbZqC5kIv0_t8vXd8DoHhSmsuexNgEsEixS5rDS8LR68vvQnI8T.LZJGxvDQ'
+                    }
+                };
+                request(requestOptions, (error, response, body) => {
+                    if (error) {
+                        logger.error("Order fulfillment failed:", error.message);
+                        reject(new Error("Order fulfillment failed:: " + error.message));
+                    } else {
+                        logger.log("Response Code:", response.statusCode);
+                        if (response.statusCode !== 200 && response.statusCode !== 201) {
+                            logger.error("Failed: HTTP response code:", response.statusCode);
+                            logger.error("Failed: HTTP response message:", response.statusMessage);
+                            reject(new Error("Order fulfill error: " + response.statusMessage));
+                        } else {
+                            const orderDtls = body;
+                            logger.log("Order fulfill successful. Data:", orderDtls);
+                            resolve(orderDtls);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Unexpected error:", error);
+                reject(new Error("EgifterError: " + error.message));
             }
-
-            const data = await response.json();
-            console.log(JSON.stringify(data));
-            return data;
-        } catch (error) {
-            console.error("Unexpected error:", error);
-            throw new Error("EgifterError: " + error.message);
-        }
-    }*/
+        });
+    }
 }
 
 module.exports = Shipment;

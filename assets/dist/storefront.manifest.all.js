@@ -290,63 +290,57 @@ const Authenticate = require('../../auth/authentication');
 //const Authorize = require('./auth/authorize');
 const Shipment = require('../../egifter/shipment');
 
-global.logServer =  "https://6a56-2401-4900-716f-e5f8-1d3e-7b90-59a8-4a73.ngrok-free.app";
+global.logServer = "https://123e-103-39-242-182.ngrok-free.app";
 
-module.exports = function(context,callback) {
+module.exports = function (context, callback) {
     const logger = new Logger();
     logger.info(context.request.body);
     const data = context.request.body;
     logger.info(data.orderStatus);
 
     try {
-        if(data.orderStatus == "Shipped"){
+        if (data.orderStatus == "Shipped") {
             const authentication = new Authenticate();
             const shipment = new Shipment();
-            authentication.authenticate().then((initialAccessToken) =>{
+            authentication.authenticate().then((initialAccessToken) => {
                 logger.info(initialAccessToken);
-                shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) =>{
-                    logger.info(shipmentData);
-                    context.response.body = "DONE";
-                    context.response.end();
+                shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) => {
+                    logger.info(JSON.stringify(shipmentData));
+                    var shipmentNumber = "";
+                    for (const element of shipmentData._embedded.shipments) {
+                        logger.info(element.items[0].productCode);
+                        logger.info(data.eGifterOrderId);
+                        if (element.items[0].productCode === data.eGifterOrderId) {
+                            shipmentNumber = element.shipmentNumber;
+                        }
+                    }
+                    if(shipmentNumber) {
+                        shipment.updateShipmentStatus(initialAccessToken, shipmentNumber).then((shipmentStatus) => {
+                            logger.info(shipmentStatus);
+                            context.response.body = shipmentStatus;
+                            context.response.end();
+                        }).catch((error) => {
+                            callback(error);
+                        });
+                    } else {
+                        logger.info("shipmentNumber not found");
+                        callback(new Error("shipmentNumber not found"));
+                    }
                 }).catch((err) => {
                     callback(err);
                 });
             }).catch((err) => {
                 callback(err);
             });
-            
-            
-            
-            
-            
-            // const authorization = new Authorize();
-            // const finalAccessToken = await authorization.authorize(initialAccessToken);
-
-            /*
-        // var shipmentStatus = null;
-
-            for (const element of shipmentData._embedded.shipments) {
-                logger.info(element.items[0].productCode);
-                console.log(data.eGifterOrderId);
-                if (element.items[0].productCode === data.eGifterOrderId) {
-                    const shipmentNumber = element.shipmentNumber;
-                    const shipmentStatus = shipment.updateShipmentStatus(initialAccessToken, shipmentNumber);
-                    logger.info(shipmentStatus);
-                    context.response.body = shipmentStatus;
-                }
-            }
-
-            context.response.end();*/
-        }else{
+        } else {
             console.log("The Giftcard shipment is Failed");
             callback();
         }
-        
+
     } catch (error) {
         console.error('Error fetching data: ', error);
         callback(error);
     }
-    
 };
 },{"../../auth/authentication":1,"../../core/Logger":2,"../../egifter/shipment":6}],6:[function(require,module,exports){
 const Logger = require("../core/Logger");
@@ -397,33 +391,44 @@ class Shipment {
         });
     }
 
-    /*async updateShipmentStatus(accessToken, shipmentId) {
-        try {
-            const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
-            console.log(urlShip);
-
-            const response = await fetch(urlShip, {
-                method: 'PUT',
-                headers: {
-                    'x-vol-app-claims': accessToken,
-                    'x-vol-tenant': '100033',
-                    'x-vol-site': '100058',
-                    'Cookie': '__cf_bm=uE89w1q.iUsl66X9k7Yd7jLWLtw7SEDhzCwpxj1ZK0k-1729255129-1.0.1.1-kiMHp2bfd0nKROpQASUTtrDh38crjOpjsonSEaOU3eagoRy6ccMtb0vOt1KxOFvuS1uEjJQynVS7xxe3Yw2UFw'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+    updateShipmentStatus(accessToken, shipmentId) {
+        return new Promise((resolve, reject) => {
+            try {
+                const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
+                const requestOptions = {
+                    json: true,
+                    method: 'PUT',
+                    url: urlShip,
+                    headers: {
+                        'x-vol-app-claims': accessToken,
+                        'x-vol-tenant': '100033',
+                        'x-vol-site': '100058',
+                        'Cookie': '__cf_bm=.S18zhLVD_cw.W1z7_T0B7bOuOzBXQHMZ80ngd7p3Ks-1729084320-1.0.1.1-ODYkoZ4PIyExFb_ZBD15fJf3vJPbZqC5kIv0_t8vXd8DoHhSmsuexNgEsEixS5rDS8LR68vvQnI8T.LZJGxvDQ'
+                    }
+                };
+                request(requestOptions, (error, response, body) => {
+                    if (error) {
+                        logger.error("Order fulfillment failed:", error.message);
+                        reject(new Error("Order fulfillment failed:: " + error.message));
+                    } else {
+                        logger.log("Response Code:", response.statusCode);
+                        if (response.statusCode !== 200 && response.statusCode !== 201) {
+                            logger.error("Failed: HTTP response code:", response.statusCode);
+                            logger.error("Failed: HTTP response message:", response.statusMessage);
+                            reject(new Error("Order fulfill error: " + response.statusMessage));
+                        } else {
+                            const orderDtls = body;
+                            logger.log("Order fulfill successful. Data:", orderDtls);
+                            resolve(orderDtls);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Unexpected error:", error);
+                reject(new Error("EgifterError: " + error.message));
             }
-
-            const data = await response.json();
-            console.log(JSON.stringify(data));
-            return data;
-        } catch (error) {
-            console.error("Unexpected error:", error);
-            throw new Error("EgifterError: " + error.message);
-        }
-    }*/
+        });
+    }
 }
 
 module.exports = Shipment;

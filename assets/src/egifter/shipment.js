@@ -2,11 +2,11 @@ const Logger = require("../core/Logger");
 const request = require('request');
 
 global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
-
+const logger = new Logger();
 class Shipment {
     getOrderShipmentDetails(accessToken, orderId) {
         return new Promise((resolve, reject) => {
-            const logger = new Logger();
+            
             try{
                 logger.info("AKM");
                 const requestOptions = {
@@ -26,7 +26,7 @@ class Shipment {
                         logger.error("Fetch Order failed:", error.message);
                         reject(new Error("Order Error: " + error.message));
                     } else {
-                        logger.log("Response Code:", response.statusCode);
+                        logger.log(response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
                             logger.error("Failed: HTTP response code:", response.statusCode);
                             logger.error("Failed: HTTP response message:", response.statusMessage);
@@ -66,10 +66,10 @@ class Shipment {
                         logger.error("Order fulfillment failed:", error.message);
                         reject(new Error("Order fulfillment failed:: " + error.message));
                     } else {
-                        logger.log("Response Code:", response.statusCode);
+                        logger.log(response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
                             logger.error("Failed: HTTP response code:", response.statusCode);
-                            logger.error("Failed: HTTP response message:", response.statusMessage);
+                            logger.error(response.statusMessage);
                             reject(new Error("Order fulfill error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;

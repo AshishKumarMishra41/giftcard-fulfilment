@@ -6,5 +6,9 @@ module.exports = {
   'updateFulfillment': {
       actionName: 'http.storefront.routes',
       customFunction: require('./domains/storefront/updateFulfillment')
+  },
+  'checkGiftCardFraud': {
+      actionName: 'http.storefront.routes',
+      customFunction: require('./domains/storefront/checkGiftCardFraud')
   }
 };

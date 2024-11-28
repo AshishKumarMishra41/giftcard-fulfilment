@@ -10,8 +10,8 @@ class Authenticate {
                     method: 'POST',
                     url: 'https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
                     body: {
-                        "applicationId": "FFM.fleetform_data_integration_dev.1.0.0.Release",
-                        "sharedSecret": "78f655a1d0c349c9ae2596be0ce1b7f3"
+                        "applicationId": "FFM.rajesh_dev.1.0.0.Release",
+                        "sharedSecret": "ee2594763bd3420da25f39d7d6ce98ac"
                     },
                     headers: {
                         'Content-Type': 'application/json'
@@ -270,28 +270,66 @@ module.exports = function (context, callback) {
 
     try {
         const authentication = new Authenticate();
-        
+        const order = new OrderStatusUpdate();
         authentication.authenticate().then((initialAccessToken) => {
             console.info(initialAccessToken);
-            const order = new OrderStatusUpdate();
+            
             order.getOrderDetails(initialAccessToken, data.orderId).then((orderStatus) => {
                 console.info("Order Status: ", orderStatus);
+                if(orderStatus == "PendingReview"){
+                    order.getOrderActions(initialAccessToken, data.orderId).then((orderActions) => {
+                        console.log(orderActions);
+                        if (data.orderStatus == "FraudApproved" && orderActions.includes("AcceptOrder")){
+                            console.log("FraudApproved");
+                            order.performOrderAction(initialAccessToken, data.orderId, "AcceptOrder").then((resp) => {
+                                order.updateOrderAttribute(initialAccessToken, data.orderId, true).then((resp) => {
+                                    context.response.body = "Fraud Updated Successfully!";
+                                    context.response.end();
+                                }).catch((err) => {
+                                    callback(new Error("Error while Updating the Order Attribute"));
+                                });
+                                
+                            }).catch((err) => {
+                                callback(new Error("Error while perform order action"));
+                            });
+                            
+                        } else if(data.orderStatus && orderActions.includes("CancelOrder")){
+                            console.log("FraudReject");
+                            order.performOrderAction(initialAccessToken, data.orderId, "CancelOrder").then((resp) => {
+                                order.updateOrderAttribute(initialAccessToken, data.orderId, false).then((resp) => {
+                                    context.response.body = "Fraud Updated Successfully!";
+                                    context.response.end();
+                                }).catch((err) => {
+                                    callback(new Error("Error while Updating the Order Attribute"));
+                                });
+                            }).catch((err) => {
+                                callback(new Error("Error while perform order action"));
+                            });
+                        } else{
+                            callback(new Error("Not an Order with giftcard"));
+                        }
+                        
+                    }).catch((err) => {
+                        callback(new Error("Error while fetching available Order Actions"));
+                    });
+                    
+                }else{
+                    console.info("Order Status need to be in Pending Review");
+                    callback(new Error("Order Status need to be in Pending Review."));
+                }
+                
             }).catch((err) => {
                 console.info("Error While getting Order Details", err);
-                callback(err);
+                callback(new Error(err.message));
             });
-            /*if (data.orderStatus == "FraudApproved"){
-                
-            } else{
-                
-            }*/
+
         }).catch((err) => {
-            callback(err);
+            callback(new Error(err.message));
         });
 
     } catch (error) {
         console.error('Error fetching data: ', error);
-        callback(error);
+        callback(new Error(err.message));
     }
 };
 },{"../../auth/authentication":1,"../../egifter/orderStatusUpdate":7}],5:[function(require,module,exports){
@@ -404,23 +442,160 @@ class OrderStatusUpdate {
     
                 request(requestOptions, (error, response, body) => {
                     if (error) {
-                        logger.error("Fetch Order failed:", error.message);
+                        console.error("Fetch Order failed:", error.message);
                         reject(new Error("Order Error: " + error.message));
                     } else {
-                        logger.log(response.statusCode);
+                        console.log(response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
-                            logger.error("Failed: HTTP response code:", response.statusCode);
-                            logger.error("Failed: HTTP response message:", response.statusMessage);
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error("Failed: HTTP response message:", response.statusMessage);
                             reject(new Error("Order Error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;
-                            logger.log("Order fetch successful. Data:", orderDtls);
+                            //console.log("Order fetch successful. Data:", orderDtls);
                             resolve(orderDtls.status);
                         }
                     }
                 });
             } catch(error){
-                logger.error("Error: "+error.message);
+                console.error("Error: "+error.message);
+                reject(new Error("OrderError: " + error));
+            }
+            
+        });
+    }
+    getOrderActions(accessToken, orderId) {
+        return new Promise((resolve, reject) => {
+            
+            try{
+                const requestOptions = {
+                    json: true,
+                    method: 'GET',
+                    url: `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/orders/${orderId}/actions`,
+                    headers: {
+                        'x-vol-app-claims': accessToken,
+                        'x-vol-tenant': '100033',
+                        'x-vol-site': '100058',
+                        //'Cookie': '__cf_bm=.S18zhLVD_cw.W1z7_T0B7bOuOzBXQHMZ80ngd7p3Ks-1729084320-1.0.1.1-ODYkoZ4PIyExFb_ZBD15fJf3vJPbZqC5kIv0_t8vXd8DoHhSmsuexNgEsEixS5rDS8LR68vvQnI8T.LZJGxvDQ'
+                    }
+                };
+    
+                request(requestOptions, (error, response, body) => {
+                    if (error) {
+                        console.error("Fetch Order failed:", error.message);
+                        reject(new Error("Order Error: " + error.message));
+                    } else {
+                        console.log(response.statusCode);
+                        if (response.statusCode !== 200 && response.statusCode !== 201) {
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error("Failed: HTTP response message:", response.statusMessage);
+                            reject(new Error("Order Error: " + response.statusMessage));
+                        } else {
+                            const orderActions = body;
+                            //console.log("Order fetch successful. Data:", orderDtls);
+                            resolve(orderActions);
+                        }
+                    }
+                });
+            } catch(error){
+                console.error("Error: "+error.message);
+                reject(new Error("OrderError: " + error));
+            }
+            
+        });
+    }
+    performOrderAction(accessToken, orderId, orderAction) {
+        return new Promise((resolve, reject) => {
+            const obj = {
+                "actionName": orderAction
+            };
+            console.log(JSON.stringify(obj));
+            try{
+                const requestOptions = {
+                    // json: true,
+                    method: 'POST',
+                    url: `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/orders/${orderId}/actions`,
+                    headers: {
+                        'x-vol-app-claims': accessToken,
+                        'x-vol-tenant': '100033',
+                        'x-vol-site': '100058',
+                        'content-type': 'application/json'
+                        //'authorization': 'Bearer '+accessToken
+                        //'Cookie': '__cf_bm=.S18zhLVD_cw.W1z7_T0B7bOuOzBXQHMZ80ngd7p3Ks-1729084320-1.0.1.1-ODYkoZ4PIyExFb_ZBD15fJf3vJPbZqC5kIv0_t8vXd8DoHhSmsuexNgEsEixS5rDS8LR68vvQnI8T.LZJGxvDQ'
+                    },
+                    body: JSON.stringify(obj)
+                };
+    
+                console.log("Request: ", requestOptions);
+                request(requestOptions, (error, response, body) => {
+                    if (error) {
+                        console.error("Fetch Order failed:", error.message);
+                        reject(new Error("Order Error: " + error.message));
+                    } else {
+                        console.log(response.statusCode);
+                        if (response.statusCode !== 200 && response.statusCode !== 201) {
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error("Failed: HTTP response message:", response.statusMessage);
+                            reject(new Error("Order Error: " + response.statusMessage));
+                        } else {
+                            const orderActionsResp = body;
+                            //console.log("Order fetch successful. Data:", orderDtls);
+                            resolve(orderActionsResp);
+                        }
+                    }
+                });
+            } catch(error){
+                console.error("Error: "+error.message);
+                reject(new Error("OrderError: " + error));
+            }
+            
+        });
+    }
+    updateOrderAttribute(accessToken, orderId, status) {
+        return new Promise((resolve, reject) => {
+            const obj = [{
+                "fullyQualifiedName": "Tenant~giftcardfraudstatus",
+                "values": [
+                    status ? true : false
+                ]
+            }];
+            console.log(JSON.stringify(obj));
+            try{
+                const requestOptions = {
+                    // json: true,
+                    method: 'PUT',
+                    url: `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/orders/${orderId}/attributes`,
+                    headers: {
+                        'x-vol-app-claims': accessToken,
+                        'x-vol-tenant': '100033',
+                        'x-vol-site': '100058',
+                        'content-type': 'application/json'
+                        //'authorization': 'Bearer '+accessToken
+                        //'Cookie': '__cf_bm=.S18zhLVD_cw.W1z7_T0B7bOuOzBXQHMZ80ngd7p3Ks-1729084320-1.0.1.1-ODYkoZ4PIyExFb_ZBD15fJf3vJPbZqC5kIv0_t8vXd8DoHhSmsuexNgEsEixS5rDS8LR68vvQnI8T.LZJGxvDQ'
+                    },
+                    body: JSON.stringify(obj)
+                };
+    
+                console.log("Request: ", requestOptions);
+                request(requestOptions, (error, response, body) => {
+                    if (error) {
+                        console.error("Fetch Order failed:", error.message);
+                        reject(new Error("Order Error: " + error.message));
+                    } else {
+                        console.log(response.statusCode);
+                        if (response.statusCode !== 200 && response.statusCode !== 201) {
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error("Failed: HTTP response message:", response.statusMessage);
+                            reject(new Error("Order Error: " + response.statusMessage));
+                        } else {
+                            const orderActionsResp = body;
+                            //console.log("Order fetch successful. Data:", orderDtls);
+                            resolve(orderActionsResp);
+                        }
+                    }
+                });
+            } catch(error){
+                console.error("Error: "+error.message);
                 reject(new Error("OrderError: " + error));
             }
             

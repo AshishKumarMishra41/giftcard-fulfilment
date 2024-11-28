@@ -9,8 +9,8 @@ class Authenticate {
                     method: 'POST',
                     url: 'https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
                     body: {
-                        "applicationId": "FFM.fleetform_data_integration_dev.1.0.0.Release",
-                        "sharedSecret": "78f655a1d0c349c9ae2596be0ce1b7f3"
+                        "applicationId": "FFM.rajesh_dev.1.0.0.Release",
+                        "sharedSecret": "ee2594763bd3420da25f39d7d6ce98ac"
                     },
                     headers: {
                         'Content-Type': 'application/json'

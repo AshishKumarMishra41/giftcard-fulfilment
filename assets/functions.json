@@ -9,6 +9,11 @@
       "id": "updateFulfillment",
       "virtualPath": "./dist\\storefront.manifest.all.js",
       "actionId": "http.storefront.routes"
+    },
+    {
+      "id": "checkGiftCardFraud",
+      "virtualPath": "./dist\\storefront.manifest.all.js",
+      "actionId": "http.storefront.routes"
     }
   ]
 }

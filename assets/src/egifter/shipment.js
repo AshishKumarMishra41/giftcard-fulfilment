@@ -8,11 +8,10 @@ class Shipment {
         return new Promise((resolve, reject) => {
             
             try{
-                logger.info("AKM");
                 const requestOptions = {
                     json: true,
                     method: 'GET',
-                    url: `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments?filter=orderId==${orderId}`,
+                    url: `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/shipments?filter=orderId==${orderId}`,
                     headers: {
                         'x-vol-app-claims': accessToken,
                         'x-vol-tenant': '100033',
@@ -49,7 +48,7 @@ class Shipment {
     updateShipmentStatus(accessToken, shipmentId) {
         return new Promise((resolve, reject) => {
             try {
-                const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
+                const urlShip = `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
                 const requestOptions = {
                     json: true,
                     method: 'PUT',

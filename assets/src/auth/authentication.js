@@ -7,7 +7,7 @@ class Authenticate {
                 const requestOptions = {
                     json: true,
                     method: 'POST',
-                    url: 'https://www.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
+                    url: 'https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
                     body: {
                         "applicationId": "FFM.fleetform_data_integration_dev.1.0.0.Release",
                         "sharedSecret": "78f655a1d0c349c9ae2596be0ce1b7f3"

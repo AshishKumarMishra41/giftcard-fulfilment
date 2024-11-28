@@ -8,7 +8,7 @@ class Authenticate {
                 const requestOptions = {
                     json: true,
                     method: 'POST',
-                    url: 'https://www.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
+                    url: 'https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/platform/applications/authtickets',
                     body: {
                         "applicationId": "FFM.fleetform_data_integration_dev.1.0.0.Release",
                         "sharedSecret": "78f655a1d0c349c9ae2596be0ce1b7f3"
@@ -357,11 +357,10 @@ class Shipment {
         return new Promise((resolve, reject) => {
             
             try{
-                logger.info("AKM");
                 const requestOptions = {
                     json: true,
                     method: 'GET',
-                    url: `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments?filter=orderId==${orderId}`,
+                    url: `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/shipments?filter=orderId==${orderId}`,
                     headers: {
                         'x-vol-app-claims': accessToken,
                         'x-vol-tenant': '100033',
@@ -398,7 +397,7 @@ class Shipment {
     updateShipmentStatus(accessToken, shipmentId) {
         return new Promise((resolve, reject) => {
             try {
-                const urlShip = `https://www.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
+                const urlShip = `https://t100033-s100058.sb.usc1.gcp.kibocommerce.com/api/commerce/shipments/${shipmentId}/fulfilled`;
                 const requestOptions = {
                     json: true,
                     method: 'PUT',

@@ -18,7 +18,7 @@ module.exports = function (context, callback) {
             }).catch((err) => {
                 console.info("Error While getting Order Details", err);
                 callback(err);
-            })
+            });
             /*if (data.orderStatus == "FraudApproved"){
                 
             } else{

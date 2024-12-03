@@ -274,9 +274,9 @@ module.exports = function (context, callback) {
         authentication.authenticate().then((initialAccessToken) => {
             console.info(initialAccessToken);
             
-            order.getOrderDetails(initialAccessToken, data.orderId).then((orderStatus) => {
-                console.info("Order Status: ", orderStatus);
-                if(orderStatus == "PendingReview"){
+            order.getOrderDetails(initialAccessToken, data.orderId).then((orderDtls) => {
+                console.info("Order Status: ", orderDtls.status);
+                if(orderDtls.status == "PendingReview"){
                     order.getOrderActions(initialAccessToken, data.orderId).then((orderActions) => {
                         console.log(orderActions);
                         if (data.orderStatus == "FraudApproved" && orderActions.includes("AcceptOrder")){
@@ -363,50 +363,72 @@ const Logger = require("../../core/Logger");
 const Authenticate = require('../../auth/authentication');
 //const Authorize = require('./auth/authorize');
 const Shipment = require('../../egifter/shipment');
-
+const OrderDtls = require('../../egifter/orderStatusUpdate');
 global.logServer = "https://1963-45-114-49-243.ngrok-free.app";
 
 module.exports = function (context, callback) {
-    const logger = new Logger();
-    logger.info(context.request.body);
+    //const logger = new Logger();
+    console.info(context.request.body);
     const data = context.request.body;
-    logger.info(data.orderStatus);
+    console.info(data.orderStatus);
 
     try {
         if (data.orderStatus == "Shipped") {
             const authentication = new Authenticate();
             const shipment = new Shipment();
+            const orderDtls =  new OrderDtls();
             authentication.authenticate().then((initialAccessToken) => {
-                logger.info(initialAccessToken);
-                shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) => {
-                    //logger.info(JSON.stringify(shipmentData));
-                    var shipmentNumber = "";
-                    for (const element of shipmentData._embedded.shipments) {
-                        logger.info(element.items[0].productCode);
-                        logger.info(data.eGifterOrderId);
-                        if (element.items[0].productCode === data.eGifterOrderId) {
-                            shipmentNumber = element.shipmentNumber;
-                            break;
-                        }
-                    }
-                    if(shipmentNumber) {
-                        logger.info("HI HELLO");
-                        shipment.updateShipmentStatus(initialAccessToken, shipmentNumber).then((shipmentStatus) => {
-                            logger.info(JSON.stringify(shipmentStatus));
-                            context.response.body = "Shipment Updated Successfully!";
-                            context.response.end();
-                        }).catch((error) => {
-                            context.response.body = "Shipment status already updated";
-                            callback(error);
+                console.info(initialAccessToken);
+                orderDtls.getOrderDetails(initialAccessToken, data.orderId).then((orderDtls) => {
+                    
+                    var ocnDtls = orderDtls.attributes.filter(element => {
+                        return element.fullyQualifiedName == "Tenant~ocn";
+                    });
+                    var orderOcnAttribute = ocnDtls[0].values;
+                    console.log(orderOcnAttribute);
+                    var giftcardItem = orderOcnAttribute.filter((ocn) => {
+                        return JSON.parse(ocn).OCN == data.eGifterOrderId;
+                    });
+                    console.log(JSON.parse(giftcardItem[0]).productCode);
+                    if(giftcardItem){
+                        shipment.getOrderShipmentDetails(initialAccessToken, data.orderId).then((shipmentData) => {
+                       
+                            var shipmentNumber = "";
+                            console.log("Shipment", shipmentData._embedded.shipments);
+                            for (const element of shipmentData._embedded.shipments) {
+                                console.info(element.items[0].productCode);
+                                console.log(JSON.parse(giftcardItem[0]).productCode);
+                                //logger.info(data.eGifterOrderId);
+                                const gitcardProdCode = JSON.parse(giftcardItem[0]).productCode;
+                                if (element.items[0].productCode == gitcardProdCode) {
+                                    shipmentNumber = element.shipmentNumber;
+                                    break;
+                                }
+                            }
+                            console.log(shipmentNumber);
+                            if(shipmentNumber) {
+                                console.info("HI HELLO");
+                                shipment.updateShipmentStatus(initialAccessToken, shipmentNumber).then((shipmentStatus) => {
+                                    console.info(JSON.stringify(shipmentStatus));
+                                    context.response.body = "Shipment Updated Successfully!";
+                                    context.response.end();
+                                }).catch((error) => {
+                                    context.response.body = "Shipment status already updated";
+                                    callback(error);
+                                });
+                            } else {
+                                console.info("shipmentNumber not found");
+                                context.response.body = "shipmentNumber not found";
+                                callback(new Error("shipmentNumber not found"));
+                            }
+                        }).catch((err) => {
+                            callback(err);
                         });
-                    } else {
-                        logger.info("shipmentNumber not found");
-                        context.response.body = "shipmentNumber not found";
-                        callback(new Error("shipmentNumber not found"));
                     }
                 }).catch((err) => {
-                    callback(err);
+                    callback(new Error("Error while fetching order details."));
                 });
+                
             }).catch((err) => {
                 callback(err);
             });
@@ -420,7 +442,7 @@ module.exports = function (context, callback) {
         callback(error);
     }
 };
-},{"../../auth/authentication":1,"../../core/Logger":2,"../../egifter/shipment":8}],7:[function(require,module,exports){
+},{"../../auth/authentication":1,"../../core/Logger":2,"../../egifter/orderStatusUpdate":7,"../../egifter/shipment":8}],7:[function(require,module,exports){
 const request = require('request');
 
 class OrderStatusUpdate {
@@ -453,7 +475,7 @@ class OrderStatusUpdate {
                         } else {
                             const orderDtls = body;
                             //console.log("Order fetch successful. Data:", orderDtls);
-                            resolve(orderDtls.status);
+                            resolve(orderDtls);
                         }
                     }
                 });
@@ -608,8 +630,8 @@ module.exports = OrderStatusUpdate;
 const Logger = require("../core/Logger");
 const request = require('request');
 
-global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
-const logger = new Logger();
+//global.logServer =  "https://0e0b-45-114-49-89.ngrok-free.app";
+//const logger = new Logger();
 class Shipment {
     getOrderShipmentDetails(accessToken, orderId) {
         return new Promise((resolve, reject) => {
@@ -629,23 +651,23 @@ class Shipment {
     
                 request(requestOptions, (error, response, body) => {
                     if (error) {
-                        logger.error("Fetch Order failed:", error.message);
+                        console.error("Fetch Order failed:", error.message);
                         reject(new Error("Order Error: " + error.message));
                     } else {
-                        logger.log(response.statusCode);
+                        console.log(response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
-                            logger.error("Failed: HTTP response code:", response.statusCode);
-                            logger.error("Failed: HTTP response message:", response.statusMessage);
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error("Failed: HTTP response message:", response.statusMessage);
                             reject(new Error("Order Error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;
-                            logger.log("Order fetch successful. Data:", orderDtls);
+                            console.log("Order fetch successful. Data:", orderDtls);
                             resolve(orderDtls);
                         }
                     }
                 });
             } catch(error){
-                logger.error("Error: "+error.message);
+                console.error("Error: "+error.message);
                 reject(new Error("EgifterError: " + error));
             }
             
@@ -669,17 +691,17 @@ class Shipment {
                 };
                 request(requestOptions, (error, response, body) => {
                     if (error) {
-                        logger.error("Order fulfillment failed:", error.message);
+                        console.error("Order fulfillment failed:", error.message);
                         reject(new Error("Order fulfillment failed:: " + error.message));
                     } else {
-                        logger.log(response.statusCode);
+                        console.log(response.statusCode);
                         if (response.statusCode !== 200 && response.statusCode !== 201) {
-                            logger.error("Failed: HTTP response code:", response.statusCode);
-                            logger.error(response.statusMessage);
+                            console.error("Failed: HTTP response code:", response.statusCode);
+                            console.error(response.statusMessage);
                             reject(new Error("Order fulfill error: " + response.statusMessage));
                         } else {
                             const orderDtls = body;
-                            logger.log("Order fulfill successful. Data:", orderDtls);
+                            console.log("Order fulfill successful. Data:", orderDtls);
                             resolve(orderDtls);
                         }
                     }

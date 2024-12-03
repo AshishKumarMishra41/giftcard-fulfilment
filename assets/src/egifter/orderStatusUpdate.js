@@ -30,7 +30,7 @@ class OrderStatusUpdate {
                         } else {
                             const orderDtls = body;
                             //console.log("Order fetch successful. Data:", orderDtls);
-                            resolve(orderDtls.status);
+                            resolve(orderDtls);
                         }
                     }
                 });

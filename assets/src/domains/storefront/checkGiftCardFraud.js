@@ -13,9 +13,9 @@ module.exports = function (context, callback) {
         authentication.authenticate().then((initialAccessToken) => {
             console.info(initialAccessToken);
             
-            order.getOrderDetails(initialAccessToken, data.orderId).then((orderStatus) => {
-                console.info("Order Status: ", orderStatus);
-                if(orderStatus == "PendingReview"){
+            order.getOrderDetails(initialAccessToken, data.orderId).then((orderDtls) => {
+                console.info("Order Status: ", orderDtls.status);
+                if(orderDtls.status == "PendingReview"){
                     order.getOrderActions(initialAccessToken, data.orderId).then((orderActions) => {
                         console.log(orderActions);
                         if (data.orderStatus == "FraudApproved" && orderActions.includes("AcceptOrder")){

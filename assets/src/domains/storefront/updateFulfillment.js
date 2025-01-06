@@ -7,7 +7,7 @@ global.logServer = "https://1963-45-114-49-243.ngrok-free.app";
 
 module.exports = function (context, callback) {
     //const logger = new Logger();
-    console.info(context.request.body);
+    console.info("05-01-2025######->>> ",context.request.body);
     const data = context.request.body;
     console.info(data.orderStatus);
 

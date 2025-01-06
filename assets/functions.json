@@ -1,6 +1,11 @@
 {
   "exports": [
     {
+      "id": "embedded.commerce.orders.action.after",
+      "virtualPath": "./dist\\commerce.orders.manifest.all.js",
+      "actionId": "embedded.commerce.orders.action.after"
+    },
+    {
       "id": "http.storefront.routes",
       "virtualPath": "./dist\\storefront.manifest.all.js",
       "actionId": "http.storefront.routes"

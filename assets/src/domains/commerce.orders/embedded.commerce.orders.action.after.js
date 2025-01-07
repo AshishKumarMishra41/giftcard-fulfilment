@@ -137,8 +137,19 @@
 
 
  */
+const SubmitGiftCardOrder = require("../../egifter/submitGiftcardOrder");
 
 module.exports = function(context, callback) {
+  const gcOrder = new SubmitGiftCardOrder();
   console.log("06-01-2025 Order after -->> ",context.get.order);
-  callback();
+  gcOrder.sendGiftcardOrderFraudCheck(orderDtls)
+    .then(result => {
+      console.log("Gift card order created successfully:", result);
+      context.response.end();
+      callback();
+    })
+    .catch(error => {
+      console.error("Failed to create gift card order:", error.message);
+      callback("Failed to create gift card order:");
+    });
 };
